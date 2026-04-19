@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ID＋バーコード＋進捗保存（最終版）</title>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body { text-align:center; font-family:sans-serif; margin:0; }
+#main {
+  height:60vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+#id { font-size:36px; margin:10px; }
+.done { color:gray; }
+button { font-size:18px; margin:6px; }
+</style>
+</head>
+<body>
+
+<h3>Excel / CSVアップロード</h3>
+<input type="file" id="file">
+
+<div id="main">
+  <svg id="barcode"></svg>
+  <div id="id">---</div>
+</div>
+
+<div id="count"></div>
+
+<button onclick="prev()">← 戻る</button>
+<button onclick="exportCSV()">進捗保存</button>
+
+<script>
+let data = [];
+let index = parseInt(localStorage.getItem("index") || 0);
+let checked = JSON.parse(localStorage.getItem("checked") || "{}");
+
+document.getElementById("file").addEventListener("change", e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = (evt) => {
+    if(file.name.endsWith(".xlsx")){
+      const arr = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(arr, {type:"array"});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      data = json.map(r => String(r.ID || "").trim()).filter(x=>x);
+    } else {
+      const text = evt.target.result;
+      data = text.split(/\r?\n/)
+        .map(x => (x.split(",")[1] || x).trim())
+        .filter(x => x && x !== "ID");
+    }
+    index = 0;
+    show();
+  };
+
+  if(file.name.endsWith(".xlsx")){
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.readAsText(file);
+  }
+});
+
+function show(){
+  if(data.length === 0) return;
+
+  let val = data[index];
+
+  document.getElementById("id").innerText = val;
+  document.getElementById("id").className = checked[val] ? "done" : "";
+
+  try{
+    JsBarcode("#barcode", val, {
+      format: "CODE128",
+      width: 2,
+      height: 80,
+      displayValue: false
+    });
+  }catch(e){}
+
+  document.getElementById("count").innerText =
+    `${index+1}/${data.length}`;
+}
+
+document.getElementById("main").addEventListener("click", () => {
+  if(index < data.length -1){
+    checked[data[index]] = true;
+    index++;
+    save();
+    show();
+  }
+});
+
+function prev(){
+  if(index > 0){
+    index--;
+    delete checked[data[index]];
+    save();
+    show();
+  }
+}
+
+function save(){
+  localStorage.setItem("checked", JSON.stringify(checked));
+  localStorage.setItem("index", index);
+}
+
+function exportCSV(){
+  let csv = "ID,checked\n";
+  data.forEach(id=>{
+    csv += id + "," + (checked[id] ? "1":"0") + "\n";
+  });
+
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "progress.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+window.onload = show;
+
+</script>
+
+</body>
+</html>
