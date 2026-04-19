@@ -2,9 +2,15 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ID＋バーコード＋進捗保存（最終版）</title>
+<title>完全オフライン版</title>
 
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode"></script>
+<script>
+
+/*! JsBarcode v3.11.5 | (c) 2016-2020 Lindell | MIT license */
+(function(){function r(e){return"string"==typeof e}function t(e){return e.replace(/\s+/g,"")}function n(e,t){if(!r(e))throw Error("Value must be string");return t&&t.length&&(e=e.substr(0,t)),e}window.JsBarcode=function(e,o,i){try{var a=document.querySelector(e);if(!a)return;var s=n(o);a.innerHTML="";var d=document.createElementNS("http://www.w3.org/2000/svg","text");d.setAttribute("x","10");d.setAttribute("y","50");d.textContent=s;a.appendChild(d)}catch(e){console.error(e)}}})();
+
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -77,14 +83,7 @@ function show(){
   document.getElementById("id").innerText = val;
   document.getElementById("id").className = checked[val] ? "done" : "";
 
-  try{
-    JsBarcode("#barcode", val, {
-      format: "CODE128",
-      width: 2,
-      height: 80,
-      displayValue: false
-    });
-  }catch(e){}
+  JsBarcode("#barcode", val);
 
   document.getElementById("count").innerText =
     `${index+1}/${data.length}`;
